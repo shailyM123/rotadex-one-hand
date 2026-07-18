@@ -35,7 +35,7 @@ for filename in components:
         print(f"Warning: {filename} not found!")
 
 # HTML template
-html_template = """<!DOCTYPE html>
+html_template = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -805,8 +805,8 @@ function toggleExplode() {
   document.getElementById('hudExplode').classList.toggle('active', exploded);
 }
 
-// Fixed canvas resize / visibility styling issues
-window.addEventListener('load', function() {
+// Handle browser window resize events
+window.addEventListener('resize', function() {
   var container = document.getElementById('canvas-container');
   if (cam && ren && container) {
     cam.aspect = container.clientWidth / container.clientHeight;
@@ -841,13 +841,9 @@ function resetAll() {
   camUp();
 }
 
-window.addEventListener('resize', function() {
-  var container = document.getElementById('canvas-container');
-  if (cam && ren && container) {
-    cam.aspect = container.clientWidth / container.clientHeight;
-    cam.updateProjectionMatrix();
-    ren.setSize(container.clientWidth, container.clientHeight);
-  }
+// Initialize the scene automatically on load
+window.addEventListener('load', function() {
+  initScene();
 });
 </script>
 </body>
