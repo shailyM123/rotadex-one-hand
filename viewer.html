@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Rotadex — 3D CAD Viewer</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#0a0f1a;color:#f1f5f9;overflow:hidden;height:100vh}
+#info{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:100;
+  background:rgba(15,23,42,0.9);border:1px solid rgba(148,163,184,0.15);
+  border-radius:14px;padding:12px 24px;text-align:center}
+#info h1{font-size:16px;color:#2dd4bf}
+#info p{font-size:11px;color:#64748b;margin-top:4px}
+#status{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:100;
+  font-size:12px;color:#64748b;background:rgba(15,23,42,0.9);padding:8px 20px;border-radius:10px;
+  border:1px solid rgba(148,163,184,0.1)}
+#btns{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);z-index:100;
+  display:flex;gap:6px}
+#btns button{padding:8px 14px;border:1px solid rgba(148,163,184,0.2);background:rgba(15,23,42,0.9);
+  color:#94a3b8;font-size:12px;border-radius:8px;cursor:pointer}
+#btns button:hover{background:rgba(45,212,191,0.15);border-color:#2dd4bf;color:#2dd4bf}
+#day{position:fixed;top:16px;right:20px;z-index:100;background:rgba(20,184,166,0.15);
+  border:1px solid rgba(45,212,191,0.3);border-radius:12px;padding:8px 18px;text-align:center}
+#day .d{font-size:24px;font-weight:700;color:#2dd4bf}
+#day .l{font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:2px}
+</style>
+</head>
+<body>
+<div id="info"><h1>Rotadex One-Hand</h1><p>Drag=rotate Scroll=zoom Right-drag=pan</p></div>
+<div id="day"><div class="l">Active Day</div><div class="d" id="dayLbl">MON</div></div>
+<div id="btns">
+  <button onclick="dispense()">Dispense</button>
+  <button onclick="toggleExplode()">Explode</button>
+  <button onclick="toggleWire()">Wireframe</button>
+  <button onclick="toggleSpin()">Auto-Spin</button>
+  <button onclick="resetAll()">Reset</button>
+</div>
+<div id="status">Starting...</div>
+
+<script>
+// Load Three.js dynamically
+var s = document.createElement('script');
+s.src = 'cad/three.min.js';
+s.onload = function() { init(); };
+s.onerror = function() { document.getElementById('status').textContent = 'ERROR: Could not load Three.js'; };
+document.head.appendChild(s);
+
+var scene, cam, ren, meshes = [], origPos = [], loaded = 0;
+var DAYS = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
+var DA = (2*Math.PI)/7;
+var drag = false, rDrag = false, prev = {x:0,y:0};
+var orb = {t:Math.PI/4, p:Math.PI/7}, rad = 240, pan = {x:0,y:35,z:0};
+var spinning = true, exploded = false, wireOn = false, explodeT = 0;
+var currentDay = 0, animating = false;
+
+var PARTS = [
+  {f:'cad/stl_models/01_base_plate.stl',     n:'Base Plate',  c:0x475569, ex:[0,-25,0]},
+  {f:'cad/stl_models/02_housing_shell.stl',   n:'Housing',     c:0x90a4ae, ex:[0,0,0], tr:true},
+  {f:'cad/stl_models/03_carousel_wheel.stl',  n:'Carousel',    c:0xcfd8dc, ex:[0,12,0]},
+  {f:'cad/stl_models/04_ratchet_wheel.stl',   n:'Ratchet',     c:0xfbbf24, ex:[0,35,0]},
+  {f:'cad/stl_models/05_pawl_arm.stl',        n:'Pawl',        c:0xf59e0b, ex:[-45,35,0]},
+  {f:'cad/stl_models/06_plunger_shaft.stl',   n:'Plunger',     c:0x7dd3fc, ex:[0,50,0]},
+  {f:'cad/stl_models/07_return_spring.stl',   n:'Spring',      c:0xf87171, ex:[30,50,0]},
+  {f:'cad/stl_models/08_palm_button.stl',     n:'Button',      c:0x38bdf8, ex:[0,72,0]},
+  {f:'cad/stl_models/09_dispenser_cup.stl',   n:'Cup',         c:0x2dd4bf, ex:[70,-12,0]},
+  {f:'cad/stl_models/10_central_axle.stl',    n:'Axle',        c:0x64748b, ex:[0,0,0]},
+  {f:'cad/stl_models/11_pills.stl',           n:'Pills',       c:0xfbbf24, ex:[0,12,0]}
+];
+
+function parseSTL(text) {
+  var v = [], nm = [], cn = null, tv = [];
+  var lines = text.split('\n');
+  for (var i = 0; i < lines.length; i++) {
+    var t = lines[i].trim();
+    if (t.indexOf('facet normal') === 0) {
+      var p = t.split(/\s+/);
+      cn = [parseFloat(p[2]), parseFloat(p[3]), parseFloat(p[4])];
+    } else if (t.indexOf('vertex') === 0) {
+      var p = t.split(/\s+/);
+      tv.push(parseFloat(p[1]), parseFloat(p[2]), parseFloat(p[3]));
+      if (tv.length === 9) {
+        v.push.apply(v, tv);
+        nm.push.apply(nm, cn.concat(cn, cn));
+        tv = [];
+      }
+    }
+  }
+  var g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(v, 3));
+  g.setAttribute('normal', new THREE.Float32BufferAttribute(nm, 3));
+  return g;
+}
+
+function init() {
+  try {
+    document.getElementById('status').textContent = 'Three.js loaded. Setting up scene...';
+
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a0f1a);
+
+    cam = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.1, 2000);
+
+    ren = new THREE.WebGLRenderer({antialias: true});
+    ren.setSize(window.innerWidth, window.innerHeight);
+    ren.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    ren.shadowMap.enabled = true;
+    ren.toneMapping = THREE.ACESFilmicToneMapping;
+    document.body.appendChild(ren.domElement);
+
+    // Lights
+    scene.add(new THREE.AmbientLight(0x94a3b8, 0.5));
+    var kl = new THREE.DirectionalLight(0xffffff, 0.85);
+    kl.position.set(80, 180, 120);
+    kl.castShadow = true;
+    scene.add(kl);
+    var fl = new THREE.DirectionalLight(0x2dd4bf, 0.25);
+    fl.position.set(-80, 40, -80);
+    scene.add(fl);
+    var rl = new THREE.DirectionalLight(0x38bdf8, 0.2);
+    rl.position.set(0, -30, -100);
+    scene.add(rl);
+
+    // Ground
+    var gnd = new THREE.Mesh(
+      new THREE.PlaneGeometry(500, 500),
+      new THREE.MeshStandardMaterial({color: 0x0a0f1a, roughness: 0.95})
+    );
+    gnd.rotation.x = -Math.PI / 2;
+    gnd.position.y = -8;
+    gnd.receiveShadow = true;
+    scene.add(gnd);
+
+    var grid = new THREE.GridHelper(300, 30, 0x151d2e, 0x151d2e);
+    grid.position.y = -7;
+    scene.add(grid);
+
+    // Day labels
+    for (var i = 0; i < DAYS.length; i++) {
+      var c = document.createElement('canvas');
+      c.width = 128; c.height = 64;
+      var ctx = c.getContext('2d');
+      ctx.font = 'bold 28px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#2dd4bf';
+      ctx.fillText(DAYS[i], 64, 32);
+      var tex = new THREE.CanvasTexture(c);
+      var sp = new THREE.Sprite(new THREE.SpriteMaterial({map: tex, transparent: true, depthTest: false}));
+      var angle = i * DA + DA / 2;
+      sp.position.set(72 * Math.cos(angle), 30, 72 * Math.sin(angle));
+      sp.scale.set(18, 9, 1);
+      scene.add(sp);
+    }
+
+    camUp();
+    setupControls();
+
+    document.getElementById('status').textContent = 'Loading STL parts...';
+
+    // Load parts
+    loadParts();
+
+    // Start render loop
+    animate();
+
+  } catch(e) {
+    document.getElementById('status').textContent = 'ERROR: ' + e.message;
+  }
+}
+
+function loadParts() {
+  for (var i = 0; i < PARTS.length; i++) {
+    (function(idx) {
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', PARTS[idx].f, true);
+      xhr.onload = function() {
+        if (xhr.status === 200) {
+          try {
+            var geo = parseSTL(xhr.responseText);
+            var p = PARTS[idx];
+            var mat = new THREE.MeshPhysicalMaterial({
+              color: p.c,
+              emissive: p.c,
+              emissiveIntensity: 0.06,
+              roughness: 0.3,
+              metalness: 0.12,
+              clearcoat: 0.35,
+              transparent: !!p.tr,
+              opacity: p.tr ? 0.28 : 1,
+              side: THREE.DoubleSide
+            });
+            var mesh = new THREE.Mesh(geo, mat);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            scene.add(mesh);
+            meshes[idx] = mesh;
+            origPos[idx] = mesh.position.clone();
+            loaded++;
+            document.getElementById('status').textContent = 'Loaded ' + loaded + '/' + PARTS.length + ' parts';
+          } catch(e) {
+            loaded++;
+            document.getElementById('status').textContent = 'Error parsing part ' + idx + ': ' + e.message;
+          }
+        }
+      };
+      xhr.onerror = function() {
+        loaded++;
+        document.getElementById('status').textContent = 'Failed to fetch part ' + idx;
+      };
+      xhr.send();
+    })(i);
+  }
+}
+
+function camUp() {
+  cam.position.x = pan.x + rad * Math.cos(orb.p) * Math.cos(orb.t);
+  cam.position.y = pan.y + rad * Math.sin(orb.p);
+  cam.position.z = pan.z + rad * Math.cos(orb.p) * Math.sin(orb.t);
+  cam.lookAt(pan.x, pan.y, pan.z);
+}
+
+function setupControls() {
+  var cv = ren.domElement;
+  cv.addEventListener('mousedown', function(e) {
+    if (e.button === 2) rDrag = true; else drag = true;
+    prev = {x: e.clientX, y: e.clientY};
+  });
+  cv.addEventListener('mousemove', function(e) {
+    var dx = e.clientX - prev.x, dy = e.clientY - prev.y;
+    if (drag) { orb.t -= dx * 0.005; orb.p = Math.max(-1, Math.min(1.3, orb.p + dy * 0.005)); camUp(); }
+    if (rDrag) { pan.x -= dx * 0.25; pan.y += dy * 0.25; camUp(); }
+    prev = {x: e.clientX, y: e.clientY};
+  });
+  cv.addEventListener('mouseup', function() { drag = false; rDrag = false; });
+  cv.addEventListener('mouseleave', function() { drag = false; rDrag = false; });
+  cv.addEventListener('wheel', function(e) { rad = Math.max(80, Math.min(500, rad + e.deltaY * 0.25)); camUp(); });
+  cv.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  if (spinning && !drag) { orb.t += 0.002; camUp(); }
+  var et = exploded ? 1 : 0;
+  explodeT += (et - explodeT) * 0.05;
+  for (var i = 0; i < meshes.length; i++) {
+    if (!meshes[i] || !origPos[i]) continue;
+    var ex = PARTS[i].ex;
+    meshes[i].position.x = origPos[i].x + ex[0] * explodeT;
+    meshes[i].position.y = origPos[i].y + ex[1] * explodeT;
+    meshes[i].position.z = origPos[i].z + ex[2] * explodeT;
+  }
+  ren.render(scene, cam);
+}
+
+var dispensedPills = [];
+
+function dispense() {
+  if (animating) return;
+  animating = true;
+  var btn = meshes[7], car = meshes[2], pills = meshes[10];
+  var btnY = origPos[7] ? origPos[7].y : 0;
+  
+  // Create a new pill mesh for the falling animation
+  var activePill = new THREE.Mesh(
+    new THREE.SphereGeometry(3.5, 16, 16),
+    new THREE.MeshStandardMaterial({
+      color: 0xfbbf24,
+      roughness: 0.35,
+      metalness: 0.1,
+      emissive: 0x92400e,
+      emissiveIntensity: 0.05
+    })
+  );
+  activePill.castShadow = true;
+  activePill.receiveShadow = true;
+  
+  // Start position inside the active compartment
+  activePill.position.set(45, 0, 20);
+  scene.add(activePill);
+  dispensedPills.push(activePill);
+
+  var phase = 0, t = 0;
+  function step() {
+    t += 0.025;
+    if (phase === 0) {
+      if (btn) btn.position.y = btnY - Math.sin(Math.min(t, 1) * Math.PI) * 6;
+      if (t >= 1) { phase = 1; t = 0; }
+    } else if (phase === 1) {
+      // Rotate the carousel
+      if (car) car.rotation.y += DA * 0.03;
+      if (pills) pills.rotation.y += DA * 0.03;
+      
+      // Animate the pill sliding down into the dispenser cup
+      // Start: (45, 0, 20) -> End: (75, 0, 11) in the cup
+      var slideT = Math.min(t, 1);
+      activePill.position.x = 45 + slideT * 30;
+      activePill.position.y = -Math.sin(slideT * Math.PI) * 3; // slight curve
+      activePill.position.z = 20 - slideT * 9;
+      
+      if (t >= 1) {
+        phase = 2;
+        t = 0;
+        currentDay = (currentDay + 1) % 7;
+        document.getElementById('dayLbl').textContent = DAYS[currentDay];
+      }
+    } else if (phase === 2) {
+      if (btn) btn.position.y = btnY - Math.sin(Math.max(0, (1 - t)) * Math.PI) * 2;
+      if (t >= 0.5) {
+        animating = false;
+        if (btn) btn.position.y = btnY;
+        return;
+      }
+    }
+    requestAnimationFrame(step);
+  }
+  step();
+}
+function toggleExplode() { exploded = !exploded; }
+function toggleWire() { wireOn = !wireOn; for (var i = 0; i < meshes.length; i++) { if (meshes[i]) meshes[i].material.wireframe = wireOn; } }
+function toggleSpin() { spinning = !spinning; }
+function resetAll() {
+  orb = {t: Math.PI/4, p: Math.PI/7}; rad = 240; pan = {x:0, y:35, z:0};
+  exploded = false; wireOn = false; spinning = true; explodeT = 0; currentDay = 0;
+  document.getElementById('dayLbl').textContent = DAYS[0];
+  for (var i = 0; i < meshes.length; i++) { if (meshes[i]) { meshes[i].material.wireframe = false; meshes[i].rotation.y = 0; } }
+  
+  // Remove all dispensed pills from the scene
+  for (var j = 0; j < dispensedPills.length; j++) {
+    scene.remove(dispensedPills[j]);
+  }
+  dispensedPills = [];
+  
+  camUp();
+}
+
+window.addEventListener('resize', function() {
+  if (cam && ren) {
+    cam.aspect = window.innerWidth / window.innerHeight;
+    cam.updateProjectionMatrix();
+    ren.setSize(window.innerWidth, window.innerHeight);
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rotadex One-Hand — Concept Sketches</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: #0f172a;
+            color: #f1f5f9;
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        header {
+            margin-bottom: 40px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #2dd4bf, #38bdf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+        p.subtitle {
+            color: #94a3b8;
+            font-size: 16px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 40px;
+        }
+        .card {
+            background: #1e293b;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+        .card h2 {
+            font-size: 20px;
+            color: #2dd4bf;
+            margin-bottom: 16px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+            padding-bottom: 10px;
+        }
+        .sketch-container {
+            width: 100%;
+            background: #f8f9fa;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid #334155;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        object {
+            width: 100%;
+            height: auto;
+            max-height: 600px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Rotadex One-Hand</h1>
+            <p class="subtitle">Concept Sketches & Design Generation</p>
+        </header>
+
+        <div class="grid">
+            <!-- Concept 1 -->
+            <div class="card">
+                <h2>Concept 1: Piano-Key Spring Pop-Up Box</h2>
+                <div class="sketch-container">
+                    <object data="sketches/concept_1_popup.svg" type="image/svg+xml"></object>
+                </div>
+            </div>
+
+            <!-- Concept 2 -->
+            <div class="card">
+                <h2>Concept 2: Slide-out Radial Drawer</h2>
+                <div class="sketch-container">
+                    <object data="sketches/concept_2_drawer.svg" type="image/svg+xml"></object>
+                </div>
+            </div>
+
+            <!-- Concept 3 -->
+            <div class="card">
+                <h2>Concept 3: Rotadex Indexing Carousel (Selected)</h2>
+                <div class="sketch-container">
+                    <object data="sketches/concept_3_rotadex.svg" type="image/svg+xml"></object>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

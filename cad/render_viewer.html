@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Rotadex One-Hand — Interactive 3D CAD Viewer</title>
+    <meta name="description" content="Interactive 3D model viewer for the Rotadex One-Handed Pill Organizer, a mechanical assistive device for stroke survivors."/>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-card: rgba(30, 41, 59, 0.7);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --accent-teal: #2dd4bf;
+            --accent-blue: #38bdf8;
+            --accent-amber: #fbbf24;
+            --accent-red: #f87171;
+            --accent-green: #4ade80;
+            --glass: rgba(15, 23, 42, 0.6);
+            --glass-border: rgba(148, 163, 184, 0.15);
+            --shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+        }
+
+        canvas { display: block; }
+
+        /* ---- Header ---- */
+        .header {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 32px;
+            background: linear-gradient(180deg, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0) 100%);
+            pointer-events: none;
+        }
+        .header > * { pointer-events: all; }
+
+        .logo {
+            display: flex; align-items: center; gap: 12px;
+        }
+        .logo-icon {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, var(--accent-teal), var(--accent-blue));
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; font-weight: 700; color: var(--bg-primary);
+        }
+        .logo-text h1 {
+            font-size: 18px; font-weight: 700;
+            background: linear-gradient(90deg, var(--accent-teal), var(--accent-blue));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .logo-text p { font-size: 11px; color: var(--text-secondary); font-weight: 400; }
+
+        /* ---- Controls Panel ---- */
+        .controls-panel {
+            position: fixed;
+            left: 24px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .ctrl-btn {
+            width: 48px; height: 48px;
+            border: 1px solid var(--glass-border);
+            background: var(--glass);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 12px;
+            color: var(--text-secondary);
+            font-size: 18px;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.25s ease;
+        }
+        .ctrl-btn:hover {
+            background: rgba(45, 212, 191, 0.15);
+            border-color: var(--accent-teal);
+            color: var(--accent-teal);
+            transform: scale(1.08);
+        }
+        .ctrl-btn.active {
+            background: rgba(45, 212, 191, 0.2);
+            border-color: var(--accent-teal);
+            color: var(--accent-teal);
+            box-shadow: 0 0 16px rgba(45, 212, 191, 0.2);
+        }
+
+        /* ---- Info Card ---- */
+        .info-card {
+            position: fixed;
+            right: 24px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 100;
+            width: 280px;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+            transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .info-card.hidden { opacity: 0; pointer-events: none; transform: translateY(-50%) translateX(20px); }
+
+        .info-card h3 {
+            font-size: 16px; font-weight: 600; margin-bottom: 12px;
+            color: var(--accent-teal);
+        }
+        .part-list { list-style: none; }
+        .part-list li {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--glass-border);
+            font-size: 13px; color: var(--text-secondary);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .part-list li:hover { color: var(--text-primary); }
+        .part-list li:last-child { border-bottom: none; }
+        .part-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        /* ---- Bottom Bar ---- */
+        .bottom-bar {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            display: flex; gap: 12px;
+            padding: 10px 20px;
+            background: var(--glass);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+        }
+        .action-btn {
+            padding: 10px 20px;
+            border: 1px solid var(--glass-border);
+            background: transparent;
+            color: var(--text-secondary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 13px; font-weight: 500;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.25s;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .action-btn:hover {
+            background: rgba(45, 212, 191, 0.1);
+            border-color: var(--accent-teal);
+            color: var(--accent-teal);
+        }
+        .action-btn.primary {
+            background: linear-gradient(135deg, rgba(45,212,191,0.2), rgba(56,189,248,0.2));
+            border-color: var(--accent-teal);
+            color: var(--accent-teal);
+        }
+
+        /* ---- Part tooltip ---- */
+        .tooltip {
+            position: fixed;
+            z-index: 200;
+            padding: 8px 14px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--accent-teal);
+            border-radius: 8px;
+            font-size: 12px;
+            color: var(--accent-teal);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .tooltip.visible { opacity: 1; }
+
+        /* ---- Loading Overlay ---- */
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 1000;
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            transition: opacity 0.6s ease;
+        }
+        .loading-overlay.fade-out { opacity: 0; pointer-events: none; }
+
+        .spinner {
+            width: 50px; height: 50px;
+            border: 3px solid var(--bg-secondary);
+            border-top-color: var(--accent-teal);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-text {
+            font-size: 14px; color: var(--text-secondary);
+            letter-spacing: 2px; text-transform: uppercase;
+        }
+
+        /* ---- Responsive ---- */
+        @media (max-width: 768px) {
+            .info-card { display: none; }
+            .controls-panel { left: 8px; }
+            .header { padding: 12px 16px; }
+            .bottom-bar { bottom: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text">Loading Rotadex 3D Model...</div>
+    </div>
+
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">
+            <div class="logo-icon">R</div>
+            <div class="logo-text">
+                <h1>Rotadex One-Hand</h1>
+                <p>Interactive CAD Assembly Viewer</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3D Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <!-- Left Controls -->
+    <div class="controls-panel">
+        <button class="ctrl-btn" id="btnExplode" title="Exploded View">💥</button>
+        <button class="ctrl-btn" id="btnReset" title="Reset View">🏠</button>
+        <button class="ctrl-btn" id="btnRotate" title="Auto Rotate" >🔄</button>
+        <button class="ctrl-btn" id="btnWire" title="Wireframe Toggle">🔲</button>
+        <button class="ctrl-btn" id="btnInfo" title="Toggle Parts Info">ℹ️</button>
+    </div>
+
+    <!-- Right Info Card -->
+    <div class="info-card" id="infoCard">
+        <h3>Assembly Parts</h3>
+        <ul class="part-list" id="partList"></ul>
+    </div>
+
+    <!-- Bottom Action Bar -->
+    <div class="bottom-bar">
+        <button class="action-btn primary" id="btnAnimate">▶ Animate Dispensing</button>
+        <button class="action-btn" id="btnXray">🔍 X-Ray Mode</button>
+        <button class="action-btn" id="btnDimensions">📏 Dimensions</button>
+    </div>
+
+    <!-- Tooltip -->
+    <div class="tooltip" id="tooltip"></div>
+
+    <!-- Three.js from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+    // ============================================================
+    // Rotadex One-Hand — Three.js Interactive 3D Model
+    // ============================================================
+
+    const PARTS_CONFIG = [
+        { name: "Base Plate",       color: 0x475569, emissive: 0x1e293b },
+        { name: "Silicone Feet",    color: 0x1e293b, emissive: 0x0f172a },
+        { name: "Housing Shell",    color: 0x94a3b8, emissive: 0x334155 },
+        { name: "Carousel Wheel",   color: 0xe2e8f0, emissive: 0x475569 },
+        { name: "Ratchet Wheel",    color: 0xfbbf24, emissive: 0x92400e },
+        { name: "Pawl Arm",         color: 0xd97706, emissive: 0x78350f },
+        { name: "Plunger Shaft",    color: 0x93c5fd, emissive: 0x1e3a8a },
+        { name: "Return Spring",    color: 0xf87171, emissive: 0x991b1b },
+        { name: "Palm Button",      color: 0x38bdf8, emissive: 0x0c4a6e },
+        { name: "Dispenser Cup",    color: 0x2dd4bf, emissive: 0x134e4a },
+        { name: "Central Axle",     color: 0x64748b, emissive: 0x1e293b },
+    ];
+
+    // ---- Scene Setup ----
+    const scene    = new THREE.Scene();
+    const camera   = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.2;
+    document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+    // Background gradient
+    scene.background = new THREE.Color(0x0f172a);
+    scene.fog = new THREE.FogExp2(0x0f172a, 0.006);
+
+    // ---- Lighting ----
+    const ambientLight = new THREE.AmbientLight(0x94a3b8, 0.4);
+    scene.add(ambientLight);
+
+    const keyLight = new THREE.DirectionalLight(0xf1f5f9, 0.9);
+    keyLight.position.set(5, 10, 7);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.set(1024, 1024);
+    scene.add(keyLight);
+
+    const fillLight = new THREE.DirectionalLight(0x2dd4bf, 0.3);
+    fillLight.position.set(-5, 3, -5);
+    scene.add(fillLight);
+
+    const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.25);
+    rimLight.position.set(0, -3, -8);
+    scene.add(rimLight);
+
+    // Ground plane (subtle grid)
+    const groundGeo = new THREE.PlaneGeometry(200, 200);
+    const groundMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9, metalness: 0.1 });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -5.5;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    // Grid helper
+    const grid = new THREE.GridHelper(100, 40, 0x1e293b, 0x1e293b);
+    grid.position.y = -5.4;
+    scene.add(grid);
+
+    // ---- Create Materials ----
+    function makeMat(cfg, transparent = false) {
+        return new THREE.MeshPhysicalMaterial({
+            color: cfg.color,
+            emissive: cfg.emissive,
+            emissiveIntensity: 0.08,
+            roughness: 0.35,
+            metalness: 0.15,
+            clearcoat: 0.3,
+            clearcoatRoughness: 0.4,
+            transparent: transparent,
+            opacity: transparent ? 0.35 : 1,
+        });
+    }
+
+    // ---- Build 3D Geometry (Procedural CAD Model) ----
+    const partGroups = [];
+    const originalPositions = [];
+    const explodedPositions = [];
+
+    function buildModel() {
+        const assemblyGroup = new THREE.Group();
+
+        // Parameters (scaled to scene units: 1 unit = ~10mm)
+        const housingR = 6.2, housingH = 8.5, baseH = 0.8;
+        const carouselR = 5.5, carouselRi = 1.5, carouselH = 3.0;
+        const ratchetR = 1.8, ratchetH = 0.6;
+        const buttonR = 2.5, plungerR = 0.7, plungerH = 2.5;
+        const axleR = 0.5, axleH = 7.7;
+
+        // 0: BASE PLATE
+        const baseGeo = new THREE.CylinderGeometry(housingR, housingR, baseH, 64);
+        const baseMesh = new THREE.Mesh(baseGeo, makeMat(PARTS_CONFIG[0]));
+        baseMesh.position.y = baseH / 2;
+        baseMesh.castShadow = true;
+        baseMesh.name = "Base Plate";
+        partGroups.push(baseMesh);
+        originalPositions.push(baseMesh.position.clone());
+        explodedPositions.push(new THREE.Vector3(0, -4, 0));
+        assemblyGroup.add(baseMesh);
+
+        // 1: SILICONE FEET
+        const feetGroup = new THREE.Group();
+        feetGroup.name = "Silicone Feet";
+        for (let i = 0; i < 4; i++) {
+            const angle = (i * Math.PI / 2) + Math.PI / 4;
+            const footGeo = new THREE.CylinderGeometry(0.8, 0.8, 0.3, 32);
+            const foot = new THREE.Mesh(footGeo, makeMat(PARTS_CONFIG[1]));
+            foot.position.set(
+                Math.cos(angle) * housingR * 0.75,
+                -0.15,
+                Math.sin(angle) * housingR * 0.75
+            );
+            feetGroup.add(foot);
+        }
+        partGroups.push(feetGroup);
+        originalPositions.push(feetGroup.position.clone());
+        explodedPositions.push(new THREE.Vector3(0, -6, 0));
+        assemblyGroup.add(feetGroup);
+
+        // 2: HOUSING SHELL (transparent cylinder)
+        const housingGeo = new THREE.CylinderGeometry(housingR, housingR, housingH, 64, 1, true);
+        const housingMesh = new THREE.Mesh(housingGeo, makeMat(PARTS_CONFIG[2], true));
+        housingMesh.position.y = baseH + housingH / 2;
+        housingMesh.name = "Housing Shell";
+        partGroups.push(housingMesh);
+        originalPositions.push(housingMesh.position.clone());
+        explodedPositions.push(new THREE.Vector3(0, 0, 0));
+        assemblyGroup.add(housingMesh);
+
+        // 3: CAROUSEL WHEEL (pie-shaped compartments)
+        const carouselGroup = new THREE.Group();
+        carouselGroup.name = "Carousel Wheel";
+        const carouselBaseGeo = new THREE.CylinderGeometry(carouselR, carouselR, carouselH, 64);
+        const carouselBaseMesh = new THREE.Mesh(carouselBaseGeo, makeMat(PARTS_CONFIG[3]));
+        carouselBaseMesh.castShadow = true;
+        carouselGroup.add(carouselBaseMesh);
+        // Divider walls
+        const divMat = new THREE.MeshPhysicalMaterial({ color: 0x94a3b8, roughness: 0.4, metalness: 0.2 });
+        for (let i = 0; i < 7; i++) {
+            const angle = (i * 2 * Math.PI) / 7;
+            const divGeo = new THREE.BoxGeometry(0.15, carouselH, carouselR - carouselRi);
+            const div = new THREE.Mesh(divGeo, divMat);
+            const midR = (carouselR + carouselRi) / 2;
+            div.position.set(Math.cos(angle) * midR, 0, Math.sin(angle) * midR);
+            div.rotation.y = -angle + Math.PI / 2;
+            carouselGroup.add(div);
+        }
+        carouselGroup.position.y = baseH + 1 + carouselH / 2;
+        partGroups.push(carouselGroup);
+        originalPositions.push(carouselGroup.position.clone());
+        explodedPositions.push(new THREE.Vector3(0, 2, 0));
+        assemblyGroup.add(carouselGroup);
+
+        // 4: RATCHET WHEEL (star-shaped)
+        const ratchetGroup = new THREE.Group();
+        ratchetGroup.name = "Ratchet Wheel";
+        const ratchetBaseGeo = new THREE.CylinderGeometry(ratchetR, ratchetR, ratchetH, 7);
+        const ratchetBase = new THREE.Mesh(ratchetBaseGeo, makeMat(PARTS_CONFIG[4]));
+        ratchetGroup.add(ratchetBase);
+        // Teeth
+        for (let i = 0; i < 7; i++) {
+            const angle = (i * 2 * Math.PI) / 7;
+            const toothGeo = new THREE.ConeGeometry(0.3, 0.5, 4);
+            const tooth = new THREE.Mesh(toothGeo, makeMat(PARTS_CONFIG[4]));
+            tooth.position.set(Math.cos(angle) * (ratchetR + 0.1), 0, Math.sin(angle) * (ratchetR + 0.1));
+            tooth.rotation.z = Math.PI / 2;
+            tooth.rotation.y = -angle;
+            ratchetGroup.add(tooth);
+        }
+        ratchetGroup.position.y = baseH + 1 + carouselH + ratchetH / 2 + 0.2;
+        partGroups.push(ratchetGroup);
+        originalPositions.push(ratchetGroup.position.clone());
+        explodedPositions.push(new THREE.Vector3(0, 6, 0));
+        assemblyGroup.add(ratchetGroup);
+
+        // 5: PAWL ARM
+        const pawlGeo = new THREE.BoxGeometry(1.5, ratchetH, 0.3);
+        const pawlMesh = new THREE.Mesh(pawlGeo, makeMat(PARTS_CONFIG[5]));
+        pawlMesh.position.set(-(ratchetR + 1.2), baseH + 1 + carouselH + ratchetH / 2 + 0.2, 0);
+        pawlMesh.name = "Pawl Arm";
+        // Pawl tip
+        const pawlTipGeo = new THREE.ConeGeometry(0.2, 0.5, 4);
+        const pawlTip = new THREE.Mesh(pawlTipGeo, makeMat(PARTS_CONFIG[5]));
+        pawlTip.rotation.z = -Math.PI / 2;
+        pawlTip.position.set(0.9, 0, 0);
+        pawlMesh.add(pawlTip);
+        partGroups.push(pawlMesh);
+        originalPositions.push(pawlMesh.position.clone());
+        explodedPositions.push(new THREE.Vector3(-7, 6, 0));
+        assemblyGroup.add(pawlMesh);
+
+        // 6: PLUNGER SHAFT
+        const plungerGeo = new THREE.CylinderGeometry(plungerR, plungerR, plungerH, 32);
+        const plungerMesh = new THREE.Mesh(plungerGeo, makeMat(PARTS_CONFIG[6]));
+        plungerMesh.position.y = housingH - plungerH / 2 - 0.5;
+        plungerMesh.name = "Plunger Shaft";
+        plungerMesh.castShadow = true;
+        partGroups.push(plungerMesh);
+        originalPositions.push(plungerMesh.position.clone());
+        explodedPositions.push(new THREE.Vector3(0, 9, 0));
+        assemblyGroup.add(plungerMesh);
+
+        // 7: RETURN SPRING (torus segments)
+        const springGroup = new THREE.Group();
+        springGroup.name = "Return Spring";
+        const springMat = makeMat(PARTS_CONFIG[7]);
+        for (let i = 0; i < 12; i++) {
+            const torusGeo = new THREE.TorusGeometry(plungerR + 0.3, 0.08, 8, 16, Math.PI * 0.5);
+            const torus = new THREE.Mesh(torusGeo, springMat);
+            torus.position.y = i * 0.18;
+            torus.rotation.y = i * 0.5;
+            springGroup.add(torus);
+        }
+        springGroup.position.y = housingH - plungerH - 0.5;
+        partGroups.push(springGroup);
+        originalPositions.push(springGroup.position.clone());
+        explodedPositions.push(new THREE.Vector3(4, 9, 0));
+        assemblyGroup.add(springGroup);
+
+        // 8: PALM BUTTON (dome)
+        const buttonGeo = new THREE.SphereGeometry(buttonR, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2);
+        const buttonMesh = new THREE.Mesh(buttonGeo, makeMat(PARTS_CONFIG[8]));
+        buttonMesh.position.y = housingH + baseH + 0.2;
+        buttonMesh.name = "Palm Button";
+        buttonMesh.castShadow = true;
+        partGroups.push(buttonMesh);
+        originalPositions.push(buttonMesh.position.clone());
+        explodedPositions.push(new THREE.Vector3(0, 14, 0));
+        assemblyGroup.add(buttonMesh);
+
+        // 9: DISPENSER CUP
+        const cupGeo = new THREE.SphereGeometry(2, 32, 16, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
+        const cupMesh = new THREE.Mesh(cupGeo, makeMat(PARTS_CONFIG[9]));
+        cupMesh.position.set(housingR + 1.5, baseH + 0.3, 0);
+        cupMesh.rotation.x = 0;
+        cupMesh.name = "Dispenser Cup";
+        partGroups.push(cupMesh);
+        originalPositions.push(cupMesh.position.clone());
+        explodedPositions.push(new THREE.Vector3(12, -2, 0));
+        assemblyGroup.add(cupMesh);
+
+        // 10: CENTRAL AXLE
+        const axleGeo = new THREE.CylinderGeometry(axleR, axleR, axleH, 32);
+        const axleMesh = new THREE.Mesh(axleGeo, makeMat(PARTS_CONFIG[10]));
+        axleMesh.position.y = baseH + axleH / 2;
+        axleMesh.name = "Central Axle";
+        partGroups.push(axleMesh);
+        originalPositions.push(axleMesh.position.clone());
+        explodedPositions.push(new THREE.Vector3(0, 0, 0));
+        assemblyGroup.add(axleMesh);
+
+        // Center the assembly vertically
+        assemblyGroup.position.y = -4;
+
+        scene.add(assemblyGroup);
+        return assemblyGroup;
+    }
+
+    const assembly = buildModel();
+
+    // ---- Camera Setup ----
+    camera.position.set(14, 10, 14);
+    camera.lookAt(0, 1, 0);
+
+    // ---- Simple Orbit Controls (Manual) ----
+    let isDragging = false, prevMouse = { x: 0, y: 0 };
+    let orbitAngle = { theta: Math.PI / 4, phi: Math.PI / 6 };
+    let orbitRadius = 22;
+    let autoRotate = true;
+
+    function updateCamera() {
+        camera.position.x = orbitRadius * Math.cos(orbitAngle.phi) * Math.cos(orbitAngle.theta);
+        camera.position.y = orbitRadius * Math.sin(orbitAngle.phi) + 1;
+        camera.position.z = orbitRadius * Math.cos(orbitAngle.phi) * Math.sin(orbitAngle.theta);
+        camera.lookAt(0, 1, 0);
+    }
+
+    renderer.domElement.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        prevMouse = { x: e.clientX, y: e.clientY };
+    });
+    renderer.domElement.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - prevMouse.x;
+        const dy = e.clientY - prevMouse.y;
+        orbitAngle.theta -= dx * 0.005;
+        orbitAngle.phi = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, orbitAngle.phi + dy * 0.005));
+        prevMouse = { x: e.clientX, y: e.clientY };
+        updateCamera();
+    });
+    renderer.domElement.addEventListener('mouseup', () => isDragging = false);
+    renderer.domElement.addEventListener('mouseleave', () => isDragging = false);
+    renderer.domElement.addEventListener('wheel', (e) => {
+        orbitRadius = Math.max(10, Math.min(40, orbitRadius + e.deltaY * 0.02));
+        updateCamera();
+    });
+
+    // Touch support
+    renderer.domElement.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+            isDragging = true;
+            prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        }
+    });
+    renderer.domElement.addEventListener('touchmove', (e) => {
+        if (!isDragging || e.touches.length !== 1) return;
+        const dx = e.touches[0].clientX - prevMouse.x;
+        const dy = e.touches[0].clientY - prevMouse.y;
+        orbitAngle.theta -= dx * 0.005;
+        orbitAngle.phi = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, orbitAngle.phi + dy * 0.005));
+        prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        updateCamera();
+    });
+    renderer.domElement.addEventListener('touchend', () => isDragging = false);
+
+    updateCamera();
+
+    // ---- State ----
+    let isExploded = false;
+    let isWireframe = false;
+    let isXray = false;
+    let showDimensions = false;
+    let isAnimating = false;
+
+    // Dimension lines
+    const dimensionLines = [];
+    function createDimensionLine(start, end, label) {
+        const dir = new THREE.Vector3().subVectors(end, start);
+        const length = dir.length();
+        const geo = new THREE.CylinderGeometry(0.03, 0.03, length, 8);
+        const mat = new THREE.MeshBasicMaterial({ color: 0x2dd4bf });
+        const line = new THREE.Mesh(geo, mat);
+        const midpoint = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
+        line.position.copy(midpoint);
+        line.lookAt(end);
+        line.rotateX(Math.PI / 2);
+        line.visible = false;
+        scene.add(line);
+        dimensionLines.push(line);
+        return line;
+    }
+
+    // Create some key dimension lines
+    createDimensionLine(new THREE.Vector3(-7, -4, 0), new THREE.Vector3(7, -4, 0), "124mm"); // diameter
+    createDimensionLine(new THREE.Vector3(8, -5, 0), new THREE.Vector3(8, 6, 0), "85mm"); // height
+
+    // ---- Populate Parts List ----
+    const partListEl = document.getElementById('partList');
+    PARTS_CONFIG.forEach((cfg, i) => {
+        const li = document.createElement('li');
+        const dot = document.createElement('span');
+        dot.className = 'part-dot';
+        dot.style.background = '#' + cfg.color.toString(16).padStart(6, '0');
+        li.appendChild(dot);
+        li.appendChild(document.createTextNode(cfg.name));
+        li.addEventListener('mouseenter', () => {
+            if (partGroups[i]) {
+                partGroups[i].traverse(child => {
+                    if (child.material) {
+                        child.material._origEmissiveIntensity = child.material.emissiveIntensity;
+                        child.material.emissiveIntensity = 0.6;
+                    }
+                });
+            }
+        });
+        li.addEventListener('mouseleave', () => {
+            if (partGroups[i]) {
+                partGroups[i].traverse(child => {
+                    if (child.material && child.material._origEmissiveIntensity !== undefined) {
+                        child.material.emissiveIntensity = child.material._origEmissiveIntensity;
+                    }
+                });
+            }
+        });
+        partListEl.appendChild(li);
+    });
+
+    // ---- Button Handlers ----
+    function lerp(a, b, t) { return a + (b - a) * t; }
+
+    // Explode / Collapse
+    let explodeProgress = 0;
+    document.getElementById('btnExplode').addEventListener('click', () => {
+        isExploded = !isExploded;
+        document.getElementById('btnExplode').classList.toggle('active', isExploded);
+    });
+
+    // Reset
+    document.getElementById('btnReset').addEventListener('click', () => {
+        orbitAngle = { theta: Math.PI / 4, phi: Math.PI / 6 };
+        orbitRadius = 22;
+        isExploded = false;
+        isWireframe = false;
+        isXray = false;
+        showDimensions = false;
+        autoRotate = true;
+        explodeProgress = 0;
+        partGroups.forEach((p, i) => p.position.copy(originalPositions[i]));
+        partGroups.forEach(p => p.traverse(c => { if (c.material) { c.material.wireframe = false; c.material.opacity = c.material._origOpacity || 1; c.material.transparent = c.material._origTransparent || false; } }));
+        dimensionLines.forEach(l => l.visible = false);
+        document.querySelectorAll('.ctrl-btn').forEach(b => b.classList.remove('active'));
+        updateCamera();
+    });
+
+    // Auto Rotate
+    document.getElementById('btnRotate').addEventListener('click', () => {
+        autoRotate = !autoRotate;
+        document.getElementById('btnRotate').classList.toggle('active', autoRotate);
+    });
+
+    // Wireframe
+    document.getElementById('btnWire').addEventListener('click', () => {
+        isWireframe = !isWireframe;
+        document.getElementById('btnWire').classList.toggle('active', isWireframe);
+        partGroups.forEach(p => p.traverse(child => {
+            if (child.material) child.material.wireframe = isWireframe;
+        }));
+    });
+
+    // Info Panel
+    document.getElementById('btnInfo').addEventListener('click', () => {
+        document.getElementById('infoCard').classList.toggle('hidden');
+    });
+
+    // X-Ray
+    document.getElementById('btnXray').addEventListener('click', () => {
+        isXray = !isXray;
+        partGroups.forEach(p => p.traverse(child => {
+            if (child.material) {
+                if (isXray) {
+                    child.material._origOpacity = child.material.opacity;
+                    child.material._origTransparent = child.material.transparent;
+                    child.material.transparent = true;
+                    child.material.opacity = 0.2;
+                } else {
+                    child.material.opacity = child.material._origOpacity || 1;
+                    child.material.transparent = child.material._origTransparent || false;
+                }
+            }
+        }));
+    });
+
+    // Dimensions
+    document.getElementById('btnDimensions').addEventListener('click', () => {
+        showDimensions = !showDimensions;
+        dimensionLines.forEach(l => l.visible = showDimensions);
+    });
+
+    // Animate Dispensing
+    document.getElementById('btnAnimate').addEventListener('click', () => {
+        if (isAnimating) return;
+        isAnimating = true;
+
+        const carousel = partGroups[3]; // carousel group
+        const button = partGroups[8];   // button
+        const origButtonY = originalPositions[8].y;
+        const pushDist = 0.8;
+        const rotAmount = (2 * Math.PI) / 7;
+        let phase = 0, t = 0;
+
+        function animStep() {
+            t += 0.02;
+            if (phase === 0) {
+                // Push button down
+                button.position.y = origButtonY - Math.sin(Math.min(t, 1) * Math.PI) * pushDist;
+                if (t >= 1) { phase = 1; t = 0; }
+            } else if (phase === 1) {
+                // Rotate carousel
+                carousel.rotation.y += rotAmount * 0.02;
+                if (t >= 1) { phase = 2; t = 0; }
+            } else {
+                button.position.y = origButtonY;
+                isAnimating = false;
+                return;
+            }
+            requestAnimationFrame(animStep);
+        }
+        animStep();
+    });
+
+    // ---- Animation Loop ----
+    const clock = new THREE.Clock();
+
+    function animate() {
+        requestAnimationFrame(animate);
+        const dt = clock.getDelta();
+
+        // Auto rotate
+        if (autoRotate && !isDragging) {
+            orbitAngle.theta += dt * 0.3;
+            updateCamera();
+        }
+
+        // Explode animation
+        const explodeTarget = isExploded ? 1 : 0;
+        explodeProgress += (explodeTarget - explodeProgress) * 0.06;
+        partGroups.forEach((part, i) => {
+            part.position.x = lerp(originalPositions[i].x, explodedPositions[i].x, explodeProgress);
+            part.position.y = lerp(originalPositions[i].y, explodedPositions[i].y, explodeProgress);
+            part.position.z = lerp(originalPositions[i].z, explodedPositions[i].z, explodeProgress);
+        });
+
+        renderer.render(scene, camera);
+    }
+
+    // ---- Resize ----
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // ---- Hide Loading ----
+    setTimeout(() => {
+        document.getElementById('loadingOverlay').classList.add('fade-out');
+        setTimeout(() => document.getElementById('loadingOverlay').style.display = 'none', 600);
+    }, 1200);
+
+    animate();
+    </script>
+</body>
+</html>

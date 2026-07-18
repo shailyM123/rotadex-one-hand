@@ -1,0 +1,142 @@
+solid 05_pawl_arm
+  facet normal 0.000000 -1.000000 0.000000
+    outer loop
+      vertex -7.500000 -1.500000 0.000000
+      vertex 7.500000 -1.500000 0.000000
+      vertex 7.500000 -1.500000 5.000000
+    endloop
+  endfacet
+  facet normal 0.000000 -1.000000 0.000000
+    outer loop
+      vertex -7.500000 -1.500000 0.000000
+      vertex 7.500000 -1.500000 5.000000
+      vertex -7.500000 -1.500000 5.000000
+    endloop
+  endfacet
+  facet normal 0.000000 1.000000 0.000000
+    outer loop
+      vertex 7.500000 1.500000 0.000000
+      vertex -7.500000 1.500000 0.000000
+      vertex -7.500000 1.500000 5.000000
+    endloop
+  endfacet
+  facet normal 0.000000 1.000000 -0.000000
+    outer loop
+      vertex 7.500000 1.500000 0.000000
+      vertex -7.500000 1.500000 5.000000
+      vertex 7.500000 1.500000 5.000000
+    endloop
+  endfacet
+  facet normal -1.000000 0.000000 0.000000
+    outer loop
+      vertex -7.500000 1.500000 0.000000
+      vertex -7.500000 -1.500000 0.000000
+      vertex -7.500000 -1.500000 5.000000
+    endloop
+  endfacet
+  facet normal -1.000000 0.000000 0.000000
+    outer loop
+      vertex -7.500000 1.500000 0.000000
+      vertex -7.500000 -1.500000 5.000000
+      vertex -7.500000 1.500000 5.000000
+    endloop
+  endfacet
+  facet normal 1.000000 0.000000 0.000000
+    outer loop
+      vertex 7.500000 -1.500000 0.000000
+      vertex 7.500000 1.500000 0.000000
+      vertex 7.500000 1.500000 5.000000
+    endloop
+  endfacet
+  facet normal 1.000000 0.000000 0.000000
+    outer loop
+      vertex 7.500000 -1.500000 0.000000
+      vertex 7.500000 1.500000 5.000000
+      vertex 7.500000 -1.500000 5.000000
+    endloop
+  endfacet
+  facet normal 0.000000 0.000000 1.000000
+    outer loop
+      vertex -7.500000 -1.500000 5.000000
+      vertex 7.500000 -1.500000 5.000000
+      vertex 7.500000 1.500000 5.000000
+    endloop
+  endfacet
+  facet normal 0.000000 0.000000 1.000000
+    outer loop
+      vertex -7.500000 -1.500000 5.000000
+      vertex 7.500000 1.500000 5.000000
+      vertex -7.500000 1.500000 5.000000
+    endloop
+  endfacet
+  facet normal 0.000000 0.000000 -1.000000
+    outer loop
+      vertex 7.500000 -1.500000 0.000000
+      vertex -7.500000 -1.500000 0.000000
+      vertex -7.500000 1.500000 0.000000
+    endloop
+  endfacet
+  facet normal 0.000000 0.000000 -1.000000
+    outer loop
+      vertex 7.500000 -1.500000 0.000000
+      vertex -7.500000 1.500000 0.000000
+      vertex 7.500000 1.500000 0.000000
+    endloop
+  endfacet
+  facet normal 0.000000 0.000000 -1.000000
+    outer loop
+      vertex 7.500000 -1.500000 0.000000
+      vertex 7.500000 1.500000 0.000000
+      vertex 12.500000 0.000000 0.000000
+    endloop
+  endfacet
+  facet normal 0.000000 0.000000 1.000000
+    outer loop
+      vertex 7.500000 -1.500000 5.000000
+      vertex 12.500000 0.000000 5.000000
+      vertex 7.500000 1.500000 5.000000
+    endloop
+  endfacet
+  facet normal 0.287348 -0.957826 0.000000
+    outer loop
+      vertex 7.500000 -1.500000 0.000000
+      vertex 12.500000 0.000000 0.000000
+      vertex 12.500000 0.000000 5.000000
+    endloop
+  endfacet
+  facet normal 0.287348 -0.957826 0.000000
+    outer loop
+      vertex 7.500000 -1.500000 0.000000
+      vertex 12.500000 0.000000 5.000000
+      vertex 7.500000 -1.500000 5.000000
+    endloop
+  endfacet
+  facet normal 0.287348 0.957826 -0.000000
+    outer loop
+      vertex 7.500000 1.500000 0.000000
+      vertex 7.500000 1.500000 5.000000
+      vertex 12.500000 0.000000 5.000000
+    endloop
+  endfacet
+  facet normal 0.287348 0.957826 0.000000
+    outer loop
+      vertex 7.500000 1.500000 0.000000
+      vertex 12.500000 0.000000 5.000000
+      vertex 12.500000 0.000000 0.000000
+    endloop
+  endfacet
+  facet normal -1.000000 0.000000 0.000000
+    outer loop
+      vertex 7.500000 -1.500000 0.000000
+      vertex 7.500000 -1.500000 5.000000
+      vertex 7.500000 1.500000 5.000000
+    endloop
+  endfacet
+  facet normal -1.000000 0.000000 0.000000
+    outer loop
+      vertex 7.500000 -1.500000 0.000000
+      vertex 7.500000 1.500000 5.000000
+      vertex 7.500000 1.500000 0.000000
+    endloop
+  endfacet
+endsolid 05_pawl_arm

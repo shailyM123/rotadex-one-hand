@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Rotadex STL Viewer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Outfit',sans-serif;background:#0f172a;color:#f1f5f9;overflow:hidden;height:100vh}
+        #info{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:100;
+            background:rgba(30,41,59,0.85);backdrop-filter:blur(16px);border:1px solid rgba(148,163,184,0.15);
+            border-radius:14px;padding:14px 28px;text-align:center;pointer-events:none}
+        #info h1{font-size:18px;font-weight:700;background:linear-gradient(90deg,#2dd4bf,#38bdf8);
+            -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        #info p{font-size:12px;color:#94a3b8;margin-top:4px}
+        #controls{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:100;
+            display:flex;gap:10px;padding:10px 18px;background:rgba(30,41,59,0.85);
+            backdrop-filter:blur(16px);border:1px solid rgba(148,163,184,0.15);border-radius:14px}
+        .btn{padding:10px 18px;border:1px solid rgba(148,163,184,0.2);background:transparent;
+            color:#94a3b8;font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;
+            border-radius:10px;cursor:pointer;transition:all .2s}
+        .btn:hover{background:rgba(45,212,191,0.15);border-color:#2dd4bf;color:#2dd4bf}
+        .btn.active{background:rgba(45,212,191,0.2);border-color:#2dd4bf;color:#2dd4bf}
+        #parts-panel{position:fixed;right:20px;top:50%;transform:translateY(-50%);z-index:100;
+            width:220px;background:rgba(30,41,59,0.85);backdrop-filter:blur(16px);
+            border:1px solid rgba(148,163,184,0.15);border-radius:14px;padding:18px}
+        #parts-panel h3{font-size:14px;color:#2dd4bf;margin-bottom:10px}
+        .part-item{display:flex;align-items:center;gap:8px;padding:6px 0;
+            border-bottom:1px solid rgba(148,163,184,0.1);font-size:12px;color:#94a3b8;cursor:pointer}
+        .part-item:hover{color:#f1f5f9}
+        .part-item:last-child{border-bottom:none}
+        .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+        #loading{position:fixed;top:0;left:0;right:0;bottom:0;z-index:1000;background:#0f172a;
+            display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+            transition:opacity .5s}
+        #loading.hide{opacity:0;pointer-events:none}
+        .spinner{width:44px;height:44px;border:3px solid #1e293b;border-top-color:#2dd4bf;
+            border-radius:50%;animation:spin 1s linear infinite}
+        @keyframes spin{to{transform:rotate(360deg)}}
+    </style>
+</head>
+<body>
+<div id="loading"><div class="spinner"></div><p style="font-size:13px;color:#94a3b8;letter-spacing:2px">LOADING MODEL...</p></div>
+<div id="info"><h1>Rotadex One-Hand — CAD Model</h1><p>🖱 Drag to rotate · Scroll to zoom · Right-drag to pan</p></div>
+<div id="controls">
+    <button class="btn" onclick="toggleWireframe()">🔲 Wireframe</button>
+    <button class="btn" onclick="toggleExplode()">💥 Explode</button>
+    <button class="btn" onclick="resetView()">🏠 Reset</button>
+    <button class="btn" onclick="toggleSpin()">🔄 Auto-Spin</button>
+</div>
+<div id="parts-panel">
+    <h3>Components (11)</h3>
+    <div id="parts-list"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// === SCENE ===
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0f172a);
+scene.fog = new THREE.FogExp2(0x0f172a, 0.004);
+
+const camera = new THREE.PerspectiveCamera(40, innerWidth/innerHeight, 0.1, 2000);
+camera.position.set(180, 130, 180);
+camera.lookAt(0, 40, 0);
+
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+document.body.appendChild(renderer.domElement);
+
+// === LIGHTS ===
+scene.add(new THREE.AmbientLight(0x94a3b8, 0.5));
+const key = new THREE.DirectionalLight(0xffffff, 0.8);
+key.position.set(100, 200, 150); key.castShadow = true; scene.add(key);
+const fill = new THREE.DirectionalLight(0x2dd4bf, 0.3);
+fill.position.set(-100, 50, -100); scene.add(fill);
+const rim = new THREE.DirectionalLight(0x38bdf8, 0.2);
+rim.position.set(0, -50, -150); scene.add(rim);
+
+// === GROUND ===
+const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(600, 600),
+    new THREE.MeshStandardMaterial({color:0x0f172a, roughness:0.9})
+);
+ground.rotation.x = -Math.PI/2; ground.position.y = -6; ground.receiveShadow = true;
+scene.add(ground);
+const grid = new THREE.GridHelper(400, 40, 0x1e293b, 0x1e293b);
+grid.position.y = -5; scene.add(grid);
+
+// === STL PARSER (ASCII) ===
+function parseASCIISTL(text) {
+    const vertices = [];
+    const normals = [];
+    const lines = text.split('\n');
+    let currentNormal = null;
+    let triVerts = [];
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('facet normal')) {
+            const parts = trimmed.split(/\s+/);
+            currentNormal = [parseFloat(parts[2]), parseFloat(parts[3]), parseFloat(parts[4])];
+        } else if (trimmed.startsWith('vertex')) {
+            const parts = trimmed.split(/\s+/);
+            triVerts.push(parseFloat(parts[1]), parseFloat(parts[2]), parseFloat(parts[3]));
+            if (triVerts.length === 9) {
+                vertices.push(...triVerts);
+                normals.push(...currentNormal, ...currentNormal, ...currentNormal);
+                triVerts = [];
+            }
+        }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    geo.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+    return geo;
+}
+
+// === PARTS CONFIG ===
+const PARTS = [
+    {file:'01_base_plate.stl',     name:'Base Plate',      color:0x475569, explode:[0, -20, 0]},
+    {file:'02_silicone_feet.stl',   name:'Silicone Feet',   color:0x1e293b, explode:[0, -35, 0]},
+    {file:'03_housing_shell.stl',   name:'Housing Shell',   color:0x78909c, explode:[0, 0, 0], transparent:true},
+    {file:'04_carousel_wheel.stl',  name:'Carousel Wheel',  color:0xe2e8f0, explode:[0, 15, 0]},
+    {file:'05_ratchet_wheel.stl',   name:'Ratchet Wheel',   color:0xfbbf24, explode:[0, 40, 0]},
+    {file:'06_pawl_arm.stl',        name:'Pawl Arm',        color:0xd97706, explode:[-50, 40, 0]},
+    {file:'07_plunger_shaft.stl',   name:'Plunger Shaft',   color:0x93c5fd, explode:[0, 55, 0]},
+    {file:'08_return_spring.stl',   name:'Return Spring',   color:0xf87171, explode:[35, 55, 0]},
+    {file:'09_palm_button.stl',     name:'Palm Button',     color:0x38bdf8, explode:[0, 80, 0]},
+    {file:'10_dispenser_cup.stl',   name:'Dispenser Cup',   color:0x2dd4bf, explode:[80, -15, 0]},
+    {file:'11_central_axle.stl',    name:'Central Axle',    color:0x64748b, explode:[0, 0, 0]},
+];
+
+const meshes = [];
+const originalPositions = [];
+let loaded = 0;
+
+// Populate parts panel
+const listEl = document.getElementById('parts-list');
+PARTS.forEach((p, i) => {
+    const div = document.createElement('div');
+    div.className = 'part-item';
+    div.innerHTML = `<span class="dot" style="background:#${p.color.toString(16).padStart(6,'0')}"></span>${p.name}`;
+    div.onmouseenter = () => { if(meshes[i]) meshes[i].material.emissiveIntensity = 0.5; };
+    div.onmouseleave = () => { if(meshes[i]) meshes[i].material.emissiveIntensity = 0.05; };
+    listEl.appendChild(div);
+});
+
+// === LOAD ALL STL FILES ===
+PARTS.forEach((part, index) => {
+    fetch('stl_models/' + part.file)
+        .then(r => r.text())
+        .then(text => {
+            const geo = parseASCIISTL(text);
+            const mat = new THREE.MeshPhysicalMaterial({
+                color: part.color,
+                emissive: part.color,
+                emissiveIntensity: 0.05,
+                roughness: 0.35,
+                metalness: 0.15,
+                clearcoat: 0.3,
+                transparent: !!part.transparent,
+                opacity: part.transparent ? 0.3 : 1,
+                side: THREE.DoubleSide
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            scene.add(mesh);
+            meshes[index] = mesh;
+            originalPositions[index] = mesh.position.clone();
+            loaded++;
+            if (loaded === PARTS.length) {
+                document.getElementById('loading').classList.add('hide');
+            }
+        })
+        .catch(err => {
+            console.warn('Could not load', part.file, err);
+            loaded++;
+            if (loaded === PARTS.length) {
+                document.getElementById('loading').classList.add('hide');
+            }
+        });
+});
+
+// === ORBIT CONTROLS (manual) ===
+let drag = false, prevM = {x:0,y:0}, rightDrag = false;
+let orbit = {theta: Math.PI/4, phi: Math.PI/7};
+let radius = 220, panOffset = {x:0, y:40, z:0};
+let spinning = true;
+
+function updateCam() {
+    camera.position.x = panOffset.x + radius * Math.cos(orbit.phi) * Math.cos(orbit.theta);
+    camera.position.y = panOffset.y + radius * Math.sin(orbit.phi);
+    camera.position.z = panOffset.z + radius * Math.cos(orbit.phi) * Math.sin(orbit.theta);
+    camera.lookAt(panOffset.x, panOffset.y, panOffset.z);
+}
+
+renderer.domElement.addEventListener('mousedown', e => {
+    if (e.button === 2) { rightDrag = true; } else { drag = true; }
+    prevM = {x:e.clientX, y:e.clientY};
+});
+renderer.domElement.addEventListener('mousemove', e => {
+    const dx = e.clientX - prevM.x, dy = e.clientY - prevM.y;
+    if (drag) {
+        orbit.theta -= dx * 0.005;
+        orbit.phi = Math.max(-1, Math.min(1.2, orbit.phi + dy * 0.005));
+        updateCam();
+    }
+    if (rightDrag) {
+        panOffset.x -= dx * 0.3; panOffset.y += dy * 0.3;
+        updateCam();
+    }
+    prevM = {x:e.clientX, y:e.clientY};
+});
+renderer.domElement.addEventListener('mouseup', () => { drag=false; rightDrag=false; });
+renderer.domElement.addEventListener('mouseleave', () => { drag=false; rightDrag=false; });
+renderer.domElement.addEventListener('wheel', e => {
+    radius = Math.max(80, Math.min(500, radius + e.deltaY * 0.3));
+    updateCam();
+});
+renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
+
+// Touch
+renderer.domElement.addEventListener('touchstart', e => {
+    if(e.touches.length===1){drag=true;prevM={x:e.touches[0].clientX,y:e.touches[0].clientY}}
+});
+renderer.domElement.addEventListener('touchmove', e => {
+    if(!drag||e.touches.length!==1)return;
+    const dx=e.touches[0].clientX-prevM.x, dy=e.touches[0].clientY-prevM.y;
+    orbit.theta-=dx*0.005; orbit.phi=Math.max(-1,Math.min(1.2,orbit.phi+dy*0.005));
+    prevM={x:e.touches[0].clientX,y:e.touches[0].clientY}; updateCam();
+});
+renderer.domElement.addEventListener('touchend', () => drag=false);
+
+updateCam();
+
+// === CONTROLS ===
+let wireOn = false, exploded = false, explodeT = 0;
+
+function toggleWireframe() {
+    wireOn = !wireOn;
+    meshes.forEach(m => { if(m) m.material.wireframe = wireOn; });
+    document.querySelectorAll('.btn')[0].classList.toggle('active', wireOn);
+}
+function toggleExplode() {
+    exploded = !exploded;
+    document.querySelectorAll('.btn')[1].classList.toggle('active', exploded);
+}
+function resetView() {
+    orbit = {theta:Math.PI/4, phi:Math.PI/7}; radius = 220;
+    panOffset = {x:0, y:40, z:0}; exploded = false; wireOn = false; spinning = true; explodeT = 0;
+    meshes.forEach(m => { if(m){m.material.wireframe=false;} });
+    document.querySelectorAll('.btn').forEach(b=>b.classList.remove('active'));
+    updateCam();
+}
+function toggleSpin() {
+    spinning = !spinning;
+    document.querySelectorAll('.btn')[3].classList.toggle('active', spinning);
+}
+
+// === ANIMATION ===
+function animate() {
+    requestAnimationFrame(animate);
+    if (spinning && !drag) { orbit.theta += 0.003; updateCam(); }
+    
+    // Smooth explode
+    const target = exploded ? 1 : 0;
+    explodeT += (target - explodeT) * 0.06;
+    meshes.forEach((m, i) => {
+        if (!m || !originalPositions[i]) return;
+        const ex = PARTS[i].explode;
+        m.position.x = originalPositions[i].x + ex[0] * explodeT;
+        m.position.y = originalPositions[i].y + ex[1] * explodeT;
+        m.position.z = originalPositions[i].z + ex[2] * explodeT;
+    });
+    
+    renderer.render(scene, camera);
+}
+
+window.addEventListener('resize', () => {
+    camera.aspect = innerWidth/innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+});
+
+animate();
+</script>
+</body>
+</html>

@@ -1,0 +1,140 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 550" width="100%" height="100%">
+  <rect width="700" height="550" fill="#f8f9fa" rx="10"/>
+  
+  <!-- Title -->
+  <text x="30" y="40" font-family="sans-serif" font-size="20" font-weight="bold" fill="#2c3e50">Concept 3: Rotadex Indexing Carousel (SELECTED)</text>
+  <text x="30" y="60" font-family="sans-serif" font-size="12" fill="#7f8c8d">One-button mechanical ratchet with gravity pill dispensing</text>
+  
+  <!-- Selected badge -->
+  <rect x="560" y="15" width="110" height="30" rx="15" fill="#10b981" stroke="#059669"/>
+  <text x="615" y="35" font-family="sans-serif" font-size="13" font-weight="bold" fill="white" text-anchor="middle">★ SELECTED</text>
+  
+  <!-- ============ CROSS-SECTION VIEW ============ -->
+  <text x="180" y="95" font-family="sans-serif" font-size="14" font-weight="bold" fill="#475569" text-anchor="middle">Cross-Section View</text>
+  
+  <!-- Outer Shell -->
+  <path d="M 60,130 L 60,350 Q 60,370 80,370 L 280,370 Q 300,370 300,350 L 300,130 Q 300,110 280,110 L 80,110 Q 60,110 60,130 Z" fill="#e2e8f0" stroke="#64748b" stroke-width="2"/>
+  
+  <!-- Central axis -->
+  <line x1="180" y1="110" x2="180" y2="370" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,4"/>
+  
+  <!-- Top Button (large dome) -->
+  <path d="M 120,120 Q 120,95 180,90 Q 240,95 240,120" fill="#3b82f6" stroke="#1d4ed8" stroke-width="2"/>
+  <text x="180" y="115" font-family="sans-serif" font-size="10" font-weight="bold" fill="white" text-anchor="middle">PALM BUTTON</text>
+  
+  <!-- Plunger shaft -->
+  <rect x="172" y="120" width="16" height="50" fill="#93c5fd" stroke="#3b82f6" stroke-width="1"/>
+  
+  <!-- Spring around plunger -->
+  <path d="M 168,130 L 192,140 L 168,150 L 192,160" fill="none" stroke="#ef4444" stroke-width="2"/>
+  <text x="150" y="148" font-family="sans-serif" font-size="8" fill="#ef4444" text-anchor="end">Spring</text>
+  
+  <!-- Ratchet pawl -->
+  <polygon points="188,170 200,178 200,185 188,180" fill="#f59e0b" stroke="#d97706" stroke-width="1.5"/>
+  <text x="215" y="182" font-family="sans-serif" font-size="8" fill="#d97706">Pawl</text>
+  
+  <!-- Carousel wheel (7-tooth ratchet + compartment) -->
+  <circle cx="180" cy="240" r="70" fill="#f1f5f9" stroke="#64748b" stroke-width="2"/>
+  <circle cx="180" cy="240" r="15" fill="#94a3b8" stroke="#64748b" stroke-width="1.5"/>
+  <text x="180" y="244" font-family="sans-serif" font-size="8" font-weight="bold" fill="white" text-anchor="middle">AXLE</text>
+  
+  <!-- Ratchet teeth (7 around the hub) -->
+  <polygon points="195,240 207,232 210,240 207,248" fill="#fbbf24" stroke="#d97706" stroke-width="1"/>
+  <polygon points="192,225 200,215 208,222 198,228" fill="#fbbf24" stroke="#d97706" stroke-width="1"/>
+  <polygon points="180,220 183,207 193,213 186,224" fill="#fbbf24" stroke="#d97706" stroke-width="1"/>
+  <polygon points="168,225 164,212 175,213 172,226" fill="#fbbf24" stroke="#d97706" stroke-width="1"/>
+  <polygon points="162,238 149,233 152,243 163,244" fill="#fbbf24" stroke="#d97706" stroke-width="1"/>
+  <polygon points="165,252 153,250 152,260 164,257" fill="#fbbf24" stroke="#d97706" stroke-width="1"/>
+  <polygon points="175,258 170,270 180,270 180,260" fill="#fbbf24" stroke="#d97706" stroke-width="1"/>
+  
+  <!-- Dividers inside carousel -->
+  <line x1="180" y1="185" x2="180" y2="170" stroke="#94a3b8" stroke-width="1"/>
+  <line x1="195" y1="175" x2="225" y2="195" stroke="#64748b" stroke-width="1"/>
+  <line x1="195" y1="175" x2="180" y2="170" stroke="#64748b" stroke-width="0"/>
+  
+  <!-- Active compartment highlighted (bottom) -->
+  <path d="M 165,310 Q 180,305 195,310 L 195,295 Q 180,290 165,295 Z" fill="#10b981" fill-opacity="0.3" stroke="#10b981" stroke-width="1.5"/>
+  
+  <!-- Pills in active compartment -->
+  <ellipse cx="175" cy="300" rx="6" ry="3" fill="#f59e0b"/>
+  <ellipse cx="187" cy="303" rx="5" ry="3" fill="#ef4444"/>
+  
+  <!-- Gravity chute arrow -->
+  <path d="M 180,310 L 180,345" fill="none" stroke="#10b981" stroke-width="2.5" marker-end="url(#arrowG)"/>
+  <defs>
+    <marker id="arrowG" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#10b981"/>
+    </marker>
+  </defs>
+  
+  <!-- Dispenser cup at base -->
+  <path d="M 130,350 Q 130,370 160,375 L 200,375 Q 230,370 230,350" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="180" y="367" font-family="sans-serif" font-size="9" font-weight="bold" fill="#1d4ed8" text-anchor="middle">SCOOP CUP</text>
+  
+  <!-- Non-slip base -->
+  <rect x="55" y="375" width="250" height="12" rx="3" fill="#475569"/>
+  <rect x="65" y="387" width="40" height="6" rx="3" fill="#1e293b"/>
+  <rect x="120" y="387" width="40" height="6" rx="3" fill="#1e293b"/>
+  <rect x="180" y="387" width="40" height="6" rx="3" fill="#1e293b"/>
+  <rect x="240" y="387" width="40" height="6" rx="3" fill="#1e293b"/>
+  <text x="180" y="400" font-family="sans-serif" font-size="9" fill="#64748b" text-anchor="middle">Non-Slip Silicone Feet</text>
+  
+  <!-- ============ TOP VIEW ============ -->
+  <text x="510" y="95" font-family="sans-serif" font-size="14" font-weight="bold" fill="#475569" text-anchor="middle">Top View</text>
+  
+  <!-- Outer ring -->
+  <circle cx="510" cy="220" r="120" fill="#e2e8f0" stroke="#64748b" stroke-width="2"/>
+  
+  <!-- 7 compartment lines -->
+  <line x1="510" y1="120" x2="510" y2="100" stroke="#94a3b8" stroke-width="1.5"/>
+  <line x1="579" y1="142" x2="595" y2="128" stroke="#94a3b8" stroke-width="1.5"/>
+  <line x1="622" y1="197" x2="640" y2="192" stroke="#94a3b8" stroke-width="1.5"/>
+  <line x1="610" y1="268" x2="628" y2="278" stroke="#94a3b8" stroke-width="1.5"/>
+  <line x1="554" y1="320" x2="565" y2="338" stroke="#94a3b8" stroke-width="1.5"/>
+  <line x1="475" y1="335" x2="468" y2="340" stroke="#94a3b8" stroke-width="1.5"/>
+  <line x1="410" y1="290" x2="395" y2="300" stroke="#94a3b8" stroke-width="1.5"/>
+  
+  <!-- Central dividers -->
+  <line x1="510" y1="220" x2="510" y2="100" stroke="#94a3b8" stroke-width="1"/>
+  <line x1="510" y1="220" x2="595" y2="128" stroke="#94a3b8" stroke-width="1"/>
+  <line x1="510" y1="220" x2="640" y2="192" stroke="#94a3b8" stroke-width="1"/>
+  <line x1="510" y1="220" x2="628" y2="278" stroke="#94a3b8" stroke-width="1"/>
+  <line x1="510" y1="220" x2="565" y2="338" stroke="#94a3b8" stroke-width="1"/>
+  <line x1="510" y1="220" x2="410" y2="340" stroke="#94a3b8" stroke-width="1"/>
+  <line x1="510" y1="220" x2="395" y2="190" stroke="#94a3b8" stroke-width="1"/>
+  
+  <!-- Day labels -->
+  <text x="530" y="155" font-family="sans-serif" font-size="12" font-weight="bold" fill="#475569">MON</text>
+  <text x="575" y="180" font-family="sans-serif" font-size="12" font-weight="bold" fill="#475569">TUE</text>
+  <text x="580" y="245" font-family="sans-serif" font-size="12" font-weight="bold" fill="#475569">WED</text>
+  <text x="545" y="300" font-family="sans-serif" font-size="12" font-weight="bold" fill="#475569">THU</text>
+  <text x="478" y="310" font-family="sans-serif" font-size="12" font-weight="bold" fill="#475569">FRI</text>
+  <text x="430" y="260" font-family="sans-serif" font-size="12" font-weight="bold" fill="#475569">SAT</text>
+  <text x="435" y="180" font-family="sans-serif" font-size="12" font-weight="bold" fill="#475569">SUN</text>
+  
+  <!-- Central button (top view) -->
+  <circle cx="510" cy="220" r="30" fill="#3b82f6" stroke="#1d4ed8" stroke-width="2"/>
+  <text x="510" y="216" font-family="sans-serif" font-size="9" font-weight="bold" fill="white" text-anchor="middle">PUSH</text>
+  <text x="510" y="228" font-family="sans-serif" font-size="9" font-weight="bold" fill="white" text-anchor="middle">HERE</text>
+  
+  <!-- View window indicator -->
+  <rect x="455" y="340" width="110" height="18" rx="4" fill="#10b981" fill-opacity="0.3" stroke="#10b981" stroke-width="1.5"/>
+  <text x="510" y="353" font-family="sans-serif" font-size="9" font-weight="bold" fill="#059669" text-anchor="middle">Day View Window</text>
+  
+  <!-- ============ OPERATION STEPS ============ -->
+  <rect x="360" y="400" width="310" height="130" rx="8" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+  <text x="515" y="420" font-family="sans-serif" font-size="13" font-weight="bold" fill="#166534" text-anchor="middle">How it Works</text>
+  <text x="370" y="442" font-family="sans-serif" font-size="11" fill="#166534">① Place hand/palm on the dome button.</text>
+  <text x="370" y="460" font-family="sans-serif" font-size="11" fill="#166534">② Push down — spring-loaded ratchet clicks.</text>
+  <text x="370" y="478" font-family="sans-serif" font-size="11" fill="#166534">③ Carousel indexes 51.4° to next day.</text>
+  <text x="370" y="496" font-family="sans-serif" font-size="11" fill="#166534">④ Pills drop via gravity into scoop cup.</text>
+  <text x="370" y="514" font-family="sans-serif" font-size="11" fill="#166534">⑤ Slide finger in cup to retrieve — DONE!</text>
+  
+  <!-- Advantages box -->
+  <rect x="30" y="420" width="310" height="110" rx="8" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+  <text x="185" y="440" font-family="sans-serif" font-size="13" font-weight="bold" fill="#1e40af" text-anchor="middle">Advantages</text>
+  <text x="40" y="460" font-family="sans-serif" font-size="11" fill="#1e3a8a">✓ Zero pinch force required (palm/fist/elbow).</text>
+  <text x="40" y="478" font-family="sans-serif" font-size="11" fill="#1e3a8a">✓ Downward force increases base stability.</text>
+  <text x="40" y="496" font-family="sans-serif" font-size="11" fill="#1e3a8a">✓ Only active-day pills are ever exposed.</text>
+  <text x="40" y="514" font-family="sans-serif" font-size="11" fill="#1e3a8a">✓ Non-electronic, zero maintenance, durable.</text>
+</svg>
