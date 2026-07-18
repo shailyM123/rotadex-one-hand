@@ -505,14 +505,69 @@ var PARTS = [
   {f:'11_pills.stl',           n:'Pills',       c:0xfbbf24, ex:[0,12,0]}
 ];
 
-// Presentation Schedule synced ONLY with user's voice (No AI Text-to-Speech)
+// ===== AI Voice Engine (Indian Female Accent) =====
+function speak(text) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  var u = new SpeechSynthesisUtterance(text);
+  u.rate = 0.92;
+  u.pitch = 1.05;
+  u.volume = 1.0;
+  var voices = window.speechSynthesis.getVoices();
+  var sel = null;
+  for (var i = 0; i < voices.length; i++) {
+    var lang = voices[i].lang.replace('_','-').toLowerCase();
+    if (lang === 'en-in' || lang.indexOf('en-in') === 0) { sel = voices[i]; break; }
+  }
+  if (!sel) {
+    for (var i = 0; i < voices.length; i++) {
+      var nm = voices[i].name.toLowerCase();
+      if (nm.indexOf('zira') >= 0 || nm.indexOf('hazel') >= 0 || (voices[i].lang.indexOf('en') === 0 && nm.indexOf('female') >= 0)) {
+        sel = voices[i]; break;
+      }
+    }
+  }
+  if (sel) u.voice = sel;
+  window.speechSynthesis.speak(u);
+}
+if (window.speechSynthesis) {
+  window.speechSynthesis.getVoices();
+  window.speechSynthesis.onvoiceschanged = function() { window.speechSynthesis.getVoices(); };
+}
+
+// Presentation Schedule — 2 Minute AI-Narrated Tour
 var steps = [
-  { d: 3500, s: 0, t: '1. Device Introduction', act: function(){ resetAll(); } },
-  { d: 3500, s: 1, t: '2. Struggle with Traditional Methods', act: function(){ } },
-  { d: 3500, s: 2, t: '3. Rotadex Solution', act: function(){ } },
-  { d: 2000, s: 3, t: '4. Dispense Simulation', act: function(){ doDispense(); } },
-  { d: 2000, s: 4, t: '5. Exploded View (Mechanics)', act: function(){ exploded = true; } },
-  { d: 2755, s: 5, t: '6. Features & Conclusion', act: function(){ exploded = false; } }
+  { d: 18000, s: 0, t: '1. Introduction',
+    voice: 'Namaste! Welcome to our end semester project presentation. Today we are presenting Rotadex, a one-handed pill organizer. This is a medical assistive device designed for stroke survivors and elderly people who can only use one hand. Our design solves this problem by replacing fine motor pinching with a single gross motor palm press.',
+    act: function(){ resetAll(); } },
+
+  { d: 16000, s: 1, t: '2. The Problem',
+    voice: 'Let us first understand the problem. Imagine an elderly grandfather, around 75 years old, suffering from severe arthritis in both hands. Every morning he struggles to open his medicine bottles. The child-proof caps require twisting and pinching with two hands, but his joints are too stiff. He often drops his pills on the floor. This is a real problem faced by millions of elderly people in India and around the world.',
+    act: function(){ } },
+
+  { d: 16000, s: 2, t: '3. Our Solution',
+    voice: 'Our solution is the Rotadex. It completely eliminates the need for finger dexterity. The user simply places their palm on the large blue dome button and pushes down. That is it. One simple push dispenses the correct days medication into a wide scoop cup. The heavy base plate keeps the device stable on the table. No pinching, no twisting, no two-hand coordination needed.',
+    act: function(){ } },
+
+  { d: 14000, s: 3, t: '4. Monday Dispense',
+    voice: 'Now watch the dispensing simulation. The user presses the blue dome with their palm. Inside, the plunger pushes the pawl arm into the ratchet wheel, which rotates the carousel by exactly 51 point 4 degrees. Mondays pills slide through the opening and fall into the green scoop cup for easy retrieval.',
+    act: function(){ doDispense(); } },
+
+  { d: 12000, s: 3, t: '5. Tuesday Dispense',
+    voice: 'Pressing again advances the carousel to Tuesday. The helical return spring automatically resets the button back to its original position after each press. The anti-reverse latch prevents accidental double dosing. This ensures patient safety.',
+    act: function(){ doDispense(); } },
+
+  { d: 16000, s: 4, t: '6. Exploded View',
+    voice: 'Now let us explode the assembly to see all 11 internal components. You can see the grey base plate at the bottom, the yellow ratchet wheel with 7 teeth, the orange pawl arm that engages the teeth, the red helical return spring with 5 active coils, the blue plunger shaft, and the cyan scoop dispenser cup. Each part is designed for easy 3D printing or injection molding.',
+    act: function(){ exploded = true; } },
+
+  { d: 12000, s: 4, t: '7. Wireframe View',
+    voice: 'Switching to wireframe mode. The complete mesh contains 8,664 triangles. The spring alone has 1,920 triangles modeled as a true helical coil geometry. This level of detail ensures accurate simulation and manufacturability.',
+    act: function(){ toggleWire(); } },
+
+  { d: 16000, s: 5, t: '8. Conclusion',
+    voice: 'In conclusion, the Rotadex is fully mechanical, requires no batteries or electronics, and is ready for manufacturing. Key features include independent one-handed operation, a heavy base plate to prevent tipping, anti-reverse safety latch to prevent double dosing, gravity-fed pill dispensing, and automatic spring reset. This device can truly improve the quality of life for elderly patients. Thank you very much for watching our presentation.',
+    act: function(){ toggleWire(); exploded = false; } }
 ];
 
 function parseSTL(text) {
@@ -734,11 +789,6 @@ function beginPresentation() {
   document.getElementById('start-overlay').style.display = 'none';
   isPlaying = true;
   document.getElementById('play-btn').disabled = false;
-  
-  // Play custom voice audio file
-  var audio = document.getElementById('voiceAudio');
-  audio.play().catch(function(e) { console.log('Audio autoplay blocked:', e); });
-
   runTour();
 }
 
@@ -756,6 +806,9 @@ function runTour() {
   // Update Slide Content
   document.querySelectorAll('.slide-content').forEach(function(el) { el.classList.remove('active'); });
   document.getElementById('slide-' + s.s).classList.add('active');
+  
+  // Speak AI narration
+  if (s.voice) { speak(s.voice); }
   
   // Apply visual action
   s.act();
@@ -787,7 +840,7 @@ function togglePlay() {
     isPlaying = false;
     clearTimeout(autoTimer);
     document.getElementById('play-btn').textContent = 'Resume';
-    document.getElementById('voiceAudio').pause();
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
   } else {
     if (currentStepIndex >= steps.length) {
       currentStepIndex = 0;
@@ -795,7 +848,6 @@ function togglePlay() {
     }
     isPlaying = true;
     document.getElementById('play-btn').textContent = 'Pause';
-    document.getElementById('voiceAudio').play().catch(function(){});
     runTour();
   }
 }
