@@ -133,9 +133,9 @@ scene.add(new THREE.AmbientLight(0x94a3b8, 0.45));
 const keyL = new THREE.DirectionalLight(0xffffff, 0.85);
 keyL.position.set(80,180,120); keyL.castShadow=true;
 keyL.shadow.mapSize.set(1024,1024); scene.add(keyL);
-scene.add(Object.assign(new THREE.DirectionalLight(0x2dd4bf,0.25),{position:new THREE.Vector3(-80,40,-80)}));
-scene.add(Object.assign(new THREE.DirectionalLight(0x38bdf8,0.2),{position:new THREE.Vector3(0,-30,-100)}));
-scene.add(Object.assign(new THREE.PointLight(0x14b8a6,0.3,300),{position:new THREE.Vector3(0,100,0)}));
+const l1 = new THREE.DirectionalLight(0x2dd4bf, 0.25); l1.position.set(-80, 40, -80); scene.add(l1);
+const l2 = new THREE.DirectionalLight(0x38bdf8, 0.2); l2.position.set(0, -30, -100); scene.add(l2);
+const l3 = new THREE.PointLight(0x14b8a6, 0.3, 300); l3.position.set(0, 100, 0); scene.add(l3);
 
 /* Ground */
 const gnd = new THREE.Mesh(new THREE.PlaneGeometry(500,500),
